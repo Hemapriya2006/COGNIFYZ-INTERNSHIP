@@ -1,0 +1,52 @@
+import java.util.Scanner;
+public class PasswordStrengthChecker 
+{
+    public static String checkPasswordStrength(String password) 
+    {
+        boolean hasUpperCase = false;
+        boolean hasLowerCase = false;
+        boolean hasDigit = false;
+        boolean hasSpecialChar = false;
+        boolean isLengthValid = password.length() >= 8;
+        boolean isCommonPattern = false;
+        String[] commonPatterns = {"password", "123456", "qwerty", "abc123"};
+        for (String pattern : commonPatterns)
+        {
+            if (password.toLowerCase().contains(pattern))
+            {
+                isCommonPattern = true;
+                break;
+            }
+        }
+        for (int i = 0; i < password.length(); i++) {
+            char ch = password.charAt(i);
+
+            if (Character.isUpperCase(ch)) {
+                hasUpperCase = true;
+            } else if (Character.isLowerCase(ch)) {
+                hasLowerCase = true;
+            } else if (Character.isDigit(ch)) {
+                hasDigit = true;
+            } else if (!Character.isLetterOrDigit(ch)) {
+                hasSpecialChar = true;
+            }
+        }
+        if (isCommonPattern) {
+            return "Weak (Common pattern detected)";
+        }
+        if (isLengthValid && hasUpperCase && hasLowerCase && hasDigit && hasSpecialChar) {
+            return "Strong";
+        } else if (isLengthValid && (hasUpperCase || hasLowerCase) && (hasDigit || hasSpecialChar)) {
+            return "Medium";
+        } else {
+            return "Weak";
+        }
+    }
+        public static void main(String[] args) {
+        Scanner scanner = new Scanner(System.in);
+        System.out.print("Enter a password to check its strength: ");
+        String password = scanner.nextLine();
+        String strength = checkPasswordStrength(password);
+        System.out.println("Password Strength: " + strength);
+    }
+}
