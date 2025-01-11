@@ -1,0 +1,100 @@
+import java.util.Scanner;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
+class BankAccount {
+    private double balance;
+    private final Lock lock = new ReentrantLock();  
+    public BankAccount(double balance) {
+        this.balance = balance;
+    }
+    public double getBalance() {
+        return balance;
+    }
+    public void deposit(double amount) {
+        lock.lock(); 
+        try {
+            balance += amount;
+        } finally {
+            lock.unlock(); 
+        }
+    }
+    public void withdraw(double amount) {
+        lock.lock(); 
+        try {
+            if (balance >= amount) {
+                balance -= amount;
+                System.out.println("Successfully withdrawn " + amount + ". New balance: " + balance);
+            } else {
+                System.out.println("Error: Insufficient balance to withdraw " + amount + ".");
+            }
+        } finally {
+            lock.unlock(); 
+        }
+    }
+}
+class DepositTask implements Runnable {
+    private final BankAccount account;
+    private final double amount;
+
+    public DepositTask(BankAccount account, double amount) {
+        this.account = account;
+        this.amount = amount;
+    }
+    @Override
+    public void run() {
+        account.deposit(amount);
+        System.out.println("Deposited " + amount + ". New balance: " + account.getBalance());
+    }
+}
+class WithdrawTask implements Runnable {
+    private final BankAccount account;
+    private final double amount;
+
+    public WithdrawTask(BankAccount account, double amount) {
+        this.account = account;
+        this.amount = amount;
+    }
+
+    @Override
+    public void run() {
+        account.withdraw(amount);
+    }
+}
+public class BankSimulator {
+    public static void main(String[] args) {
+        Scanner scanner = new Scanner(System.in);
+        System.out.print("Enter initial balance: ");
+        double initialBalance = scanner.nextDouble();
+        BankAccount account = new BankAccount(initialBalance);
+        System.out.print("Enter amount to deposit in first transaction: ");
+        double deposit1Amount = scanner.nextDouble();
+        System.out.print("Enter amount to withdraw in first transaction: ");
+        double withdraw1Amount = scanner.nextDouble();
+        System.out.print("Enter amount to deposit in second transaction: ");
+        double deposit2Amount = scanner.nextDouble();
+        System.out.print("Enter amount to withdraw in second transaction: ");
+        double withdraw2Amount = scanner.nextDouble();
+        DepositTask deposit1 = new DepositTask(account, deposit1Amount);
+        WithdrawTask withdraw1 = new WithdrawTask(account, withdraw1Amount);
+        DepositTask deposit2 = new DepositTask(account, deposit2Amount);
+        WithdrawTask withdraw2 = new WithdrawTask(account, withdraw2Amount);
+        Thread t1 = new Thread(deposit1);
+        Thread t2 = new Thread(withdraw1);
+        Thread t3 = new Thread(deposit2);
+        Thread t4 = new Thread(withdraw2);
+        t1.start();
+        t2.start();
+        t3.start();
+        t4.start();
+        try {
+            t1.join();
+            t2.join();
+            t3.join();
+            t4.join();
+        } catch (InterruptedException e) {
+            System.out.println("Thread interrupted: " + e.getMessage());
+        }
+        System.out.println("Final balance: " + account.getBalance());
+        scanner.close(); 
+    }
+}
