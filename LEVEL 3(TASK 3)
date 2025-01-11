@@ -1,0 +1,115 @@
+import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import javax.swing.*;
+public class Calculator {
+    public static void main(String[] args) {
+        JFrame frame = new JFrame("Calculator");
+        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        frame.setSize(400, 600);
+        JPanel displayPanel = new JPanel();
+        JTextField displayField = new JTextField(20);
+        displayField.setFont(new Font("Arial", Font.BOLD, 24));
+        displayField.setHorizontalAlignment(JTextField.RIGHT);
+        displayField.setEditable(false);
+        displayPanel.add(displayField);
+        JPanel buttonPanel = new JPanel();
+        buttonPanel.setLayout(new GridLayout(4, 4, 10, 10));
+        String[] buttons = {
+            "7", "8", "9", "/",
+            "4", "5", "6", "*",
+            "1", "2", "3", "-",
+            "C", "0", "=", "+"
+        };
+        ActionListener listener = new ActionListener() {
+            StringBuilder input = new StringBuilder();
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                String command = e.getActionCommand();
+                switch (command) {
+                    case "C":
+                        input.setLength(0);
+                        displayField.setText("");
+                        break;
+                    case "=":
+                        try {
+                            double result = eval(input.toString());
+                            displayField.setText(String.valueOf(result));
+                            input.setLength(0);
+                        } catch (Exception ex) {
+                            displayField.setText("Error");
+                            input.setLength(0);
+                        }
+                        break;
+                    default:
+                        input.append(command);
+                        displayField.setText(input.toString());
+                }
+            }
+        };
+        for (String text : buttons) {
+            JButton button = new JButton(text);
+            button.setFont(new Font("Arial", Font.BOLD, 20));
+            button.addActionListener(listener);
+            buttonPanel.add(button);
+        }
+        frame.setLayout(new BorderLayout());
+        frame.add(displayPanel, BorderLayout.NORTH);
+        frame.add(buttonPanel, BorderLayout.CENTER);
+        frame.setVisible(true);
+    }
+    public static double eval(String expression) {
+        return new Object() {
+            int pos = -1, ch;
+            void nextChar() {
+                ch = (++pos < expression.length()) ? expression.charAt(pos) : -1;
+            }
+            boolean eat(int charToEat) {
+                while (ch == ' ') nextChar();
+                if (ch == charToEat) {
+                    nextChar();
+                    return true;
+                }
+                return false;
+            }
+            double parse() {
+                nextChar();
+                double x = parseExpression();
+                if (pos < expression.length()) throw new RuntimeException("Unexpected: " + (char) ch);
+                return x;
+            }
+            double parseExpression() {
+                double x = parseTerm();
+                for (; ; ) {
+                    if (eat('+')) x += parseTerm(); // addition
+                    else if (eat('-')) x -= parseTerm(); // subtraction
+                    else return x;
+                }
+            }
+            double parseTerm() {
+                double x = parseFactor();
+                for (; ; ) {
+                    if (eat('*')) x *= parseFactor(); // multiplication
+                    else if (eat('/')) x /= parseFactor(); // division
+                    else return x;
+                }
+            }
+            double parseFactor() {
+                if (eat('+')) return parseFactor(); // unary plus
+                if (eat('-')) return -parseFactor(); // unary minus
+                double x;
+                int startPos = this.pos;
+                if (eat('(')) { // parentheses
+                    x = parseExpression();
+                    eat(')');
+                } else if ((ch >= '0' && ch <= '9') || ch == '.') { // numbers
+                    while ((ch >= '0' && ch <= '9') || ch == '.') nextChar();
+                    x = Double.parseDouble(expression.substring(startPos, this.pos));
+                } else {
+                    throw new RuntimeException("Unexpected: " + (char) ch);
+                }
+                return x;
+            }
+        }.parse();
+    }
+}
